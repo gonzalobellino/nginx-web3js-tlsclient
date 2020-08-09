@@ -14,10 +14,10 @@ http {
         ssl_certificate_key    /certs/server.key;
         ssl_client_certificate /certs/ca.crt;
         ssl_verify_client      on;
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
         ssl_ciphers   HIGH:!aNULL:!MD5;
         access_log /logs/access.log;
-        error_log /logs/error.log debug; 
+        error_log /logs/error.log debug;
 
         location / {
             proxy_pass http://localhost:8545;
@@ -26,27 +26,31 @@ http {
 }
 ~~~
 
-## TLS 
+## TLS
 
 ### Create the file openssl_ext.conf
 
 ~~~
 [req]
 distinguished_name = req_distinguished_name
-req_extensions = v3_req
+req_extensions = server_extensions
 prompt = no
 
 [req_distinguished_name]
 C = AR
 ST = BA
 O = DUMMY_ORG
-OU = ETH
+OU = TEST
 CN = localhost
 emailAddress = email@email.com
 
 [server_extensions]
 keyUsage = digitalSignature,keyEncipherment
 extendedKeyUsage=serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1   = localhost
 
 [client_extensions]
 keyUsage = digitalSignature,keyEncipherment
@@ -63,7 +67,7 @@ openssl req -x509 -new -nodes -key ./certs/ca.key -sha256 -days 1825 -out ./cert
 ## Create Server key/crt
 
 ~~~
-openssl genrsa  -out ./certs/server.key 
+openssl genrsa  -out ./certs/server.key
 openssl req -new -key ./certs/server.key -out ./certs/server.csr -config ./certs/openssl_ext.conf
 
 openssl x509 -req -extensions server_extensions -extfile ./certs/openssl_ext.conf -in ./certs/server.csr -CA ./certs/ca.crt -CAkey ./certs/ca.key -CAcreateserial -out ./certs/server.crt -days 3650
@@ -72,7 +76,7 @@ openssl x509 -req -extensions server_extensions -extfile ./certs/openssl_ext.con
 ## Create Client key/cert
 
 ~~~
-openssl genrsa  -out ./certs/client.key 
+openssl genrsa  -out ./certs/client.key
 openssl req -new -key ./certs/client.key -out ./certs/client.csr -config ./certs/openssl_ext.conf
 
 openssl x509 -req -extensions client_extensions -extfile ./certs/openssl_ext.conf -in ./certs/client.csr -CA ./certs/ca.crt -CAkey ./certs/ca.key -CAcreateserial -out ./certs/client.crt -days 3650
@@ -136,7 +140,7 @@ web3.eth.getBlock( 'latest', true, function(error, result) {
 });
 ~~~
 
-### Run test 
+### Run test
 
 *Replace <HOSTNAME>, <WALLET_ADDRESS>
 
